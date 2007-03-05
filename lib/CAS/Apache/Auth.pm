@@ -14,7 +14,7 @@ Version 0.01
 =cut
 
 our $VERSION = '0.01';
-use Apache2::RequestRec ();
+#use Apache2::RequestRec ();
 #  use Apache2::RequestIO ();
 
 # AUTH_REQUIRED DECLINED DONE FORBIDDEN NOT_FOUND OK REDIRECT SERVER_ERROR
@@ -72,12 +72,14 @@ sub authen {
 		my $request = $r->unparsed_uri;
 		my $login = "/$base_cas_dir/public/login?return=$request";
 		$r->custom_response(AUTH_REQUIRED, $login);
-		$self->gripe("No username or password provided - send to login page");
+		$self->gripe("No username or password provided - send to login page: "
+			. $login);
 		return AUTH_REQUIRED;
 	} # if no username or password provided, send to login page
 	
 	my $rem_ip = $r->connection->remote_ip;
 	
+	warn "Authenticating: USERNAME => $user, PASSWORD => $password, IP => $rem_ip";
 	$session_key = $self->authenticate({USERNAME => $user,
 		PASSWORD => $password, IP => $rem_ip});
 	
@@ -101,10 +103,13 @@ sub authen {
 sub authz {
 	my $self = shift;
 	my $r = shift;
-	my $base_cas_dir = $r->dir_config('CAS_BASE_URI') || '';
+	return OK unless $r->is_initial_req;
+	
+	my $base_dir = $r->dir_config('CAS_BASE_URI') || '';
 	my $request = $r->uri;
 	my $full_request = $r->unparsed_uri;
-	my $login = "/$base_cas_dir/public/login?return=$full_request";
+	# what if it isn't under /public?!
+	my $login = "/$base_dir/public/login?return=$full_request";
 	$r->custom_response(AUTH_REQUIRED, $login);
 	
 	my $cookie_name = $self->client->{Cookie_Name};
@@ -139,7 +144,22 @@ sub authz {
 		} # if no session key, have user log in
 	} # if no cookie
 	
+	# Some <Location>s may be configured so that all files under that location
+	# need only to check against a single resource.
+	my $there_is_only_one = $r->dir_config('SinglePermissionTree') || 0;
+	if ($there_is_only_one) { $request = $base_dir }
+	
+	# And still other <Location>s may want to use only the top level file or
+	# subdirectory. This could be useful for handlers or pages that parse the
+	# remainder of the URL as arguments, or where the subdirectoires are all
+	# assigned to individual users, who own everything therein
+	my $down_one_only = $r->dir_config('OneStepOnly') || 0;
+	if ($down_one_only) {
+		$request =~ s{$base_dir(/[^/]+).+}{$base_dir$1};
+	} # filter out sub'directories'
+	
 	my $rem_ip = $r->connection->remote_ip;
+	warn "Authorizing: SESSION => $session_key, RESOURCE => $request, MASK => 8, IP => $rem_ip";
 	my $is_authorized = $self->authorize({SESSION => $session_key,
 		RESOURCE => $request, MASK => 8, IP => $rem_ip, DEBUG => 1});
 	$self->gripe("SESSION => $session_key, "

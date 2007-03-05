@@ -25,6 +25,8 @@ unless (-r 'CAS.yaml') {
 	
 	print <<NOTE;
 
+## Not yet functional - may be dropped ##
+
 The CAS configuration file has been written. You should review the
 configuration file and make any edits needed to enable optional features.
 The configuration information will be appended appended to /etc/CAS.yaml
@@ -46,7 +48,15 @@ WriteMakefile(
     ABSTRACT_FROM       => 'lib/CAS/Apache.pm',
     PL_FILES            => {},
     PREREQ_PM => {
-        'Test::More' => 0,
+		'Test::More' => 0,
+		CAS => .86,
+		'CGI' => 0,
+		'Apache2::RequestRec' => 0,
+		'Apache2::RequestIO' => 0,
+		'Apache2::Access' => 0,
+		'Apache2::RequestUtil' => 0,
+		'Apache2::Response' => 0,
+		'Apache2::Const' => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'CAS-Apache-*' },

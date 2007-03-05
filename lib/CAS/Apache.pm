@@ -9,15 +9,15 @@ CAS::Apache - The great new CAS::Apache!
 
 =head1 VERSION
 
-Version 0.01
+Version 0.44
 
 =cut
 
-our $VERSION = '0.42';
+our $VERSION = '0.44';
+#use Apache2::Const qw(OK);
+#use CAS::Apache::UserForms ();
+#use CGI qw(fatalsToBrowser);
 use Apache2::RequestRec ();
-use Apache2::Const qw(OK);
-use CAS::Apache::UserForms ();
-use CGI qw(fatalsToBrowser);
 use Apache2::RequestIO ();
 
 $| = 1;
@@ -45,38 +45,19 @@ if you don't export anything, such as for a purely object-oriented module.
 =cut
 
 
-sub handler {
-	my $r = shift;
-	die unless ref $r;
-	my $cgi = CGI->new;
-	
-	my $forms = CAS::Apache::UserForms->new($cgi);
-	
-	my $request = $r->uri();
-	die unless $request;
-	my $base_cas_dir = $r->dir_config('CAS_BASE_URI') || '';
-	warn "base_cas_dir = $base_cas_dir ; request = $request";
-	
-	$request =~ m{$base_cas_dir/(?:public/)?(\w+)};
-	my $page = $1;
-	unless ($page) {
-		die "Don't know what to do with $request";
-	} # unless it's a CAS page
-	warn "html = $forms->$page(\$r)\n";
-	
-	# $r->unparsed_uri to find args
-	$r->content_type('text/html');
-	
-	my $html = $forms->$page($r);
-	print $html;
-	
-	warn "HTML printed\n";
-	return OK;
-} # handler
-
-
 # write wrappers for the appropriate cas messaging functions
 
+=head1 TO DO
+
+Write wrappers for CAS messaging for more useful behavior under mod_perl and to
+allow CAS-Apache handlers to use same methodology.
+
+Sort out how to have CAS::Apache::Auth determine clients dynamically (perhaps
+a conf.d/client.conf PerlSetVar Client Dynamic(|Static), or just have
+CLIENT_ID set to Dynamic or Lookup or such non-numeric?
+
+Decide how to implement permission trees, so that a single top level
+directory need be granted, and where that gets configured.
 
 =head1 AUTHOR
 

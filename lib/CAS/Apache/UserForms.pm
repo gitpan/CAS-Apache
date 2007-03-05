@@ -40,69 +40,39 @@ if you don't export anything, such as for a purely object-oriented module.
 
 =cut
 
-sub new {
-	my $proto = shift;
-	my $class = ref($proto) || $proto;
-	my $cgi = shift;
-	
-	my $self = bless ({cgi => $cgi},$class);
-	return $self;
-}
 
-
-sub login {
-	my $self = shift;
-	my $r = shift || die 'Request object required';
-	my $cgi = $self->{cgi};
+sub handler {
+	my $apache2 = shift;
+	die unless ref $apache2;
 	
-	my $base_cas_dir = $r->dir_config('CAS_BASE_URI') || '';
-	my $auth_page = "$base_cas_dir/public/authentication";
-	my %params = $cgi->Vars;
+	my $request = $apache2->uri();
+	die unless $request;
 	
-	warn "Returning login form";
-	my $html = $cgi->start_html("CAS default login page")
-		. $cgi->h1("Please enter username and password:") . "\n"
-		. $cgi->start_form(-action => $auth_page) . "\n"
-		. "Username: "
-		. $cgi->textfield(-name => 'Username', -default => $params{Username})
-		. "\n" . $cgi->p . "Password: "
-		. $cgi->password_field('Password') . "\n"
-		. $cgi->hidden('uri', $params{return}) . "\n"
-		. $cgi->p . $cgi->submit(-value=>'Log in') . "\n" . $cgi->end_form
-		. "\n" . $cgi->p
-		. qq{*Forgot password?* &nbsp; &nbsp; <a href="/SQCAS/public/NewUser">}
-		. "Register</a>"
-		. $cgi->end_html;
+	$request =~ m{/(\w+)$};
+	my $page = $1;
+	unless ($page) {
+		die "Unable to determine page requested in $request";
+	} # unless it's a CAS page
+	my $CR_gen_response = \&{$page};
+	unless (defined &$CR_gen_response) {
+		die "$page is not available through __PACKAGE__";
+	} # see if method is defined in this namespace
 	
-	return $html;
-}
-
-
-sub authentication {
-	my $self = shift;
-	my $r = shift;
-	my $cgi = $self->{cgi};
-	my %params = $cgi->Vars;
+	# $apache2->unparsed_uri to find args
+	$apache2->content_type('text/html');
 	
-	my $admin_client = $r->dir_config('CLIENT_ID') || '';
-	warn "admin_client = $admin_client\n";
-	my $auth = CAS::Apache::Auth->new({CLIENT_ID => $admin_client});
-	my $status = $auth->authen($r, $params{Username}, $params{Password});
+	my ($status, $html) = &$CR_gen_response($apache2);
 	return $status unless $status == OK;
 	
-	my $base_cas_dir = $r->dir_config('CAS_BASE_URI') || '';
-	my $location = $params{uri} || "$base_cas_dir/welcome";
-	
-	$r->headers_out->set(Location => $location);
-	$r->status(REDIRECT);
-	
-	return REDIRECT;
-} # authentication
+	print $html;
+#	warn "HTML printed\n";
+	return OK;
+} # handler
 
 
 sub welcome {
-	my $self = shift;
-	my $cgi = $self->{cgi};
+	my $apache2 = shift || die 'Request object required';
+	my $cgi = CGI->new;
 	
 	my $html = $cgi->start_html("CAS default welcome page");
 	$html .= <<HTML;
@@ -110,8 +80,50 @@ sub welcome {
 HTML
 	
 	$html .= $cgi->end_html;
-	return $html
-}
+	return (OK, $html);
+} # welcome
+
+
+sub preferences {
+	my $apache2 = shift || die 'Request object required';
+	my $cgi = CGI->new;
+	
+	my $html = $cgi->start_html("Foo");
+	$html .= <<HTML;
+<h1>Bar</h1>
+HTML
+	
+	$html .= $cgi->end_html;
+	return (OK, $html);
+} # preferences
+
+
+sub forgot_password {
+	my $apache2 = shift || die 'Request object required';
+	my $cgi = CGI->new;
+	
+	my $html = $cgi->start_html("Foo");
+	$html .= <<HTML;
+<h1>Bar</h1>
+HTML
+	
+	$html .= $cgi->end_html;
+	return (OK, $html);
+} # forgot_password
+
+sub edit_account {
+	my $apache2 = shift || die 'Request object required';
+	my $cgi = CGI->new;
+	
+	my $html = $cgi->start_html("Foo");
+	$html .= <<HTML;
+<h1>Bar</h1>
+HTML
+	
+	$html .= $cgi->end_html;
+	return (OK, $html);
+} # edit_account
+
 
 
 =head1 AUTHOR

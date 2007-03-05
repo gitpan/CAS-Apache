@@ -1,10 +1,18 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         CAS-Apache
-version:      0.42
+version:      0.44
 version_from: lib/CAS/Apache.pm
 installdirs:  site
 requires:
+    Apache2::Access:               0
+    Apache2::Const:                0
+    Apache2::RequestIO:            0
+    Apache2::RequestRec:           0
+    Apache2::RequestUtil:          0
+    Apache2::Response:             0
+    CAS:                           0.86
+    CGI:                           0
     Test::More:                    0
 
 distribution_type: module
