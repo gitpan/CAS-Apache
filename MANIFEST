@@ -1,13 +1,16 @@
+CAS.conf
 Changes
-MANIFEST
-META.yml # Will be created by "make dist"
-Makefile.PL
-README
 lib/CAS/Apache.pm
+lib/CAS/Apache/AdminForms.pm
 lib/CAS/Apache/Auth.pm
+lib/CAS/Apache/PublicForms.pm
 lib/CAS/Apache/UserForms.pm
+Makefile.PL
+MANIFEST			This list of files
+META.yml
+README
+sample_files/add_user.prl
+sample_files/client.conf
 t/00-load.t
-t/boilerplate.t
 t/pod-coverage.t
 t/pod.t
-CAS.conf

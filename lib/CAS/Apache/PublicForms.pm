@@ -1,4 +1,4 @@
-package CAS::Apache::UserForms;
+package CAS::Apache::PublicForms;
 
 use warnings FATAL => 'all', NONFATAL => 'redefine';
 use strict;
@@ -14,7 +14,7 @@ Version 0.01
 =cut
 
 our $VERSION = '0.01';
-use Apache2::Const qw(OK SERVER_ERROR REDIRECT);
+use Apache2::Const qw(OK SERVER_ERROR REDIRECT AUTH_REQUIRED);
 use base qw(CAS::Apache);
 use CAS::Apache::Auth ();
 
@@ -58,7 +58,7 @@ sub handler {
 		die "$page is not available through __PACKAGE__";
 	} # see if method is defined in this namespace
 	
-	# $apache2->unparsed_uri to find args
+	# $r->unparsed_uri to find args
 	$apache2->content_type('text/html');
 	
 	my ($status, $html) = &$CR_gen_response($apache2);
@@ -70,22 +70,39 @@ sub handler {
 } # handler
 
 
-sub welcome {
+sub login {
 	my $apache2 = shift || die 'Request object required';
 	my $cgi = CGI->new;
+	$cgi->param(-name => 'Password', -value => ''); # just in case
+	my $message = shift || '';
+	warn "message = $message";
+	$message = qq{<h3 style="color:red;">$message</h3>} if $message;
 	
-	my $html = $cgi->start_html("CAS default welcome page");
-	$html .= <<HTML;
-<h1>Welcome to the Central Authorization Server</h1>
-HTML
+	my $base_cas_dir = $apache2->dir_config('CAS_BASE_URI') || '';
+	my $auth_page = "$base_cas_dir/public/authentication";
+	my %params = $cgi->Vars;
 	
-	$html .= $cgi->end_html;
+	my $html = $cgi->start_html("CAS default login page")
+		. $cgi->h1("Please enter username and password:") . "\n"
+		. $message . "\n"
+		. $cgi->start_form(-action => $auth_page) . "\n"
+		. "Username: "
+		. $cgi->textfield(-name => 'Username', -default => $params{Username})
+		. "\n" . $cgi->p . "Password: "
+		. $cgi->password_field('Password') . "\n"
+		. $cgi->hidden('uri', $params{return}) . "\n"
+		. $cgi->p . $cgi->submit(-value=>'Log in') . "\n" . $cgi->end_form
+		. "\n" . $cgi->p . qq{<a href="$base_cas_dir/public/forgot">}
+		. qq{Forgot password?</a> &nbsp; &nbsp; <a href="/SQCAS/public/NewUser">}
+		. "Register</a>"
+		. $cgi->end_html;
+	
 	return (OK, $html);
-} # welcome
+} # login
 
 
-sub preferences {
-	my $apache2 = shift || die 'Request object required';
+sub logout {
+	my $apache2 = shift;
 	my $cgi = CGI->new;
 	
 	my $html = $cgi->start_html("Foo");
@@ -95,11 +112,43 @@ HTML
 	
 	$html .= $cgi->end_html;
 	return (OK, $html);
-} # preferences
+} # logout
+
+
+sub authentication {
+	my $apache2 = shift;
+	my $cgi = CGI->new;
+	my %params = $cgi->Vars;
+	
+	my $base_cas_dir = $apache2->dir_config('CAS_BASE_URI') || '';
+	
+	my $auth = $apache2->dir_config('auth_object');
+	my $status = SERVER_ERROR;
+	my $messages = '';
+	{
+	no strict 'refs';
+	$status = ${$auth}->authen($apache2, $params{Username}, $params{Password});
+	$messages = ${$auth}->messages;
+	warn "messages = $messages";
+	}
+	if ($status and $status == AUTH_REQUIRED) {
+		# should be yet another configuration variable?!?
+		return login($apache2, $messages);
+	} # if auth required
+	elsif ($status != OK) { return $status }
+	
+	my $welcome = $apache2->dir_config('CAS_WELCOME_PAGE') || '';
+	my $location = $params{uri} || $welcome || "$base_cas_dir/";
+	
+	$apache2->headers_out->set(Location => $location);
+	$apache2->status(REDIRECT);
+	
+	return (REDIRECT,'');
+} # authentication
 
 
 sub forgot_password {
-	my $apache2 = shift || die 'Request object required';
+	my $apache2 = shift;
 	my $cgi = CGI->new;
 	
 	my $html = $cgi->start_html("Foo");
@@ -108,14 +157,13 @@ sub forgot_password {
 HTML
 	
 	$html .= $cgi->end_html;
-	return (OK, $html);
+	return (OK, $html)
 } # forgot_password
 
-sub edit_account {
-	my $apache2 = shift || die 'Request object required';
+
+sub new_user {
+	my $apache2 = shift;
 	my $cgi = CGI->new;
-	
-	my $user_table = _gen_user_table($cgi);
 	
 	my $html = $cgi->start_html("Foo");
 	$html .= <<HTML;
@@ -123,37 +171,22 @@ sub edit_account {
 HTML
 	
 	$html .= $cgi->end_html;
-	return (OK, $html);
-} # edit_account
+	return (OK, $html)
+} # new_user
 
 
-##
-## Support functions
-##
-
-sub _gen_user_table {
-	my $cgi = shift;
+sub contact {
+	my $apache2 = shift;
+	my $cgi = CGI->new;
 	
-	my $username = $cgi->textfield(-name => 'Username', -size => 12,
-		-maxlength => 12);
-	my $password = $cgi->textfield(-name => 'Username', -size => 12,
-		-maxlength => 12);
-	my $check_pass = $cgi->textfield(-name => 'Username', -size => 12,
-		-maxlength => 12);
-	my $table = <<HTML;
-<table class="form_table" id="user_table">
-  <tr id="username_row"><td class="left">
-    <span class="bold">Choose Your Username:</span><br />
-    <span class="small">(5-12 characters)</span>
-    </td><td class="right">
-  $username
- </td></tr>
- 
- 
+	my $html = $cgi->start_html("Foo");
+	$html .= <<HTML;
+<h1>Bar</h1>
 HTML
 	
-	
-} # _gen_user_table
+	$html .= $cgi->end_html;
+	return (OK, $html)
+} # contact
 
 
 

@@ -1,11 +1,11 @@
-package CAS::Apache::UserForms;
+package CAS::Apache::AdminForms;
 
 use warnings FATAL => 'all', NONFATAL => 'redefine';
 use strict;
 
 =head1 NAME
 
-CAS::Apache::UserForms - The great new CAS::Apache::UserForms!
+CAS::Apache::AdminForms - The great new CAS::Apache::UserForms!
 
 =head1 VERSION
 
@@ -70,22 +70,8 @@ sub handler {
 } # handler
 
 
-sub welcome {
-	my $apache2 = shift || die 'Request object required';
-	my $cgi = CGI->new;
-	
-	my $html = $cgi->start_html("CAS default welcome page");
-	$html .= <<HTML;
-<h1>Welcome to the Central Authorization Server</h1>
-HTML
-	
-	$html .= $cgi->end_html;
-	return (OK, $html);
-} # welcome
-
-
-sub preferences {
-	my $apache2 = shift || die 'Request object required';
+sub users {
+	my $apache2 = shift;
 	my $cgi = CGI->new;
 	
 	my $html = $cgi->start_html("Foo");
@@ -95,11 +81,11 @@ HTML
 	
 	$html .= $cgi->end_html;
 	return (OK, $html);
-} # preferences
+} # users
 
 
-sub forgot_password {
-	my $apache2 = shift || die 'Request object required';
+sub add_client {
+	my $apache2 = shift;
 	my $cgi = CGI->new;
 	
 	my $html = $cgi->start_html("Foo");
@@ -109,13 +95,12 @@ HTML
 	
 	$html .= $cgi->end_html;
 	return (OK, $html);
-} # forgot_password
+} # add_client
 
-sub edit_account {
-	my $apache2 = shift || die 'Request object required';
+
+sub edit_client {
+	my $apache2 = shift;
 	my $cgi = CGI->new;
-	
-	my $user_table = _gen_user_table($cgi);
 	
 	my $html = $cgi->start_html("Foo");
 	$html .= <<HTML;
@@ -124,37 +109,35 @@ HTML
 	
 	$html .= $cgi->end_html;
 	return (OK, $html);
-} # edit_account
+} # edit_client
 
 
-##
-## Support functions
-##
-
-sub _gen_user_table {
-	my $cgi = shift;
+sub permissions {
+	my $apache2 = shift;
+	my $cgi = CGI->new;
 	
-	my $username = $cgi->textfield(-name => 'Username', -size => 12,
-		-maxlength => 12);
-	my $password = $cgi->textfield(-name => 'Username', -size => 12,
-		-maxlength => 12);
-	my $check_pass = $cgi->textfield(-name => 'Username', -size => 12,
-		-maxlength => 12);
-	my $table = <<HTML;
-<table class="form_table" id="user_table">
-  <tr id="username_row"><td class="left">
-    <span class="bold">Choose Your Username:</span><br />
-    <span class="small">(5-12 characters)</span>
-    </td><td class="right">
-  $username
- </td></tr>
- 
- 
+	my $html = $cgi->start_html("Foo");
+	$html .= <<HTML;
+<h1>Bar</h1>
 HTML
 	
-	
-} # _gen_user_table
+	$html .= $cgi->end_html;
+	return (OK, $html);
+} # permissions
 
+
+sub groups {
+	my $apache2 = shift;
+	my $cgi = CGI->new;
+	
+	my $html = $cgi->start_html("Foo");
+	$html .= <<HTML;
+<h1>Bar</h1>
+HTML
+	
+	$html .= $cgi->end_html;
+	return (OK, $html);
+} # groups
 
 
 =head1 AUTHOR

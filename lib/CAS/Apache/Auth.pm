@@ -43,12 +43,26 @@ Perhaps a little code snippet.
 
 =cut
 
-#sub handler : method {
-#	my $r = shift;
-#	$r->content_type('text/html');
-#	$r->print("mod_perl rules!\n");
-#	return OK; # We must return a status to mod_perl
-#}
+sub new {
+	my $proto = shift;
+	my $class = ref($proto) || $proto;
+	my $self  = $class->SUPER::new(@_);
+	
+	# now, db caching doesn't work well in mod_perl as is - generates a lot
+	# of 'Commands out of sync' errors
+	$self->{dbh} = undef;
+	
+	return $self;
+} # new
+
+
+# because this package doesn't cache the db connection itself, depending on
+# ApACHE::DBI to do it, we need to have a local version of the dbh method to
+# reconnect
+sub dbh {
+	my $self = shift;
+	return &{$self->{cas_db_connect}};
+} # dbh
 
 
 sub authen {

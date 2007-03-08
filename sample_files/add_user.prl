@@ -1,0 +1,54 @@
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+use YAML;
+use CAS::DB;
+use CAS::User;
+$| = 1;
+
+my $conf_file = shift || die 'No confifuration filename provided';
+
+# OK, now read in the conf file
+my $HR_config = '';
+{
+local $/ = undef; # slurpy
+open(YAML, $conf_file) or die "Couldn't open CAS config file $conf_file: $!";
+my $yaml_in = <YAML>;
+close YAML or warn("YAML didn't close preoperly: $!");
+$HR_config = Load($yaml_in);
+}
+
+print "Username: ";
+chomp(my $Username = <STDIN>);
+
+print "Password: ";
+chomp(my $Password = <STDIN>);
+
+print "Email: ";
+chomp(my $Email = <STDIN>);
+
+print "Firstname: ";
+chomp(my $Firstname = <STDIN>);
+
+print "Lastname: ";
+chomp(my $Lastname = <STDIN>);
+
+print "Phone: ";
+chomp(my $Phone = <STDIN>);
+
+print "CLIENT_ID: ";
+chomp(my $CLIENT_ID = <STDIN>);
+
+my $group = $HR_config->{DEFAULT_GROUP};
+print "Group [$group]: ";
+chomp(my $in_grp = <STDIN>);
+$group = $in_grp if $in_grp;
+
+my $user = CAS::User->new({Username => $Username,
+	Password => $Password, Email => $Email,
+	Firstname => $Firstname,
+	Lastname => $Lastname, GROUP => $group,
+	CLIENT_ID => $CLIENT_ID, DEBUG => 1});
+die "Problem creating admin user" unless defined $user;
+
